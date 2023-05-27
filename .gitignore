@@ -1,0 +1,5 @@
+.env
+chromedriver_mac_arm64/
+node_modules/
+.DS_Store
+linux-00-78670b5fdf42.json

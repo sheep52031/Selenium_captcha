@@ -1,0 +1,7 @@
+selenium==4.8.0
+bs4
+chromedriver-py
+requests
+google-cloud-vision
+google-api-python-client
+python-dotenv
