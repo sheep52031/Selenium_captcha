@@ -24,31 +24,89 @@ pip install -r requirements.txt
 3. Set up your environment variables in a `.env` file.
 
 ```.env
+# GCP VISION API Service Account credentials
 YOUR_SERVICE=your-google-cloud-credentials.json
 API_KEY=your-google-cloud-vision-api-key
 ```
 
 Replace `your-google-cloud-credentials.json` with the path to your Google Cloud credentials JSON file and `your-google-cloud-vision-api-key` with your actual API key.
 
-## Usage
+
+## Setting up GCP Service Account and downloading the credentials JSON
+
+1. Create a Google Cloud Project
+* Head to the Google Cloud Console (console.cloud.google.com).
+* If you haven't already created a project, click on the project drop-down and select 'New Project', and then set the project name and location.
+
+1. Enable Google Vision API
+* Navigate to the "Library" section in the left-hand side menu.
+* Search for "Vision API" and select it from the results.
+On the API page, click "Enable".
+
+1.  Create a Service Account
+* Go to the "IAM & Admin" -> "Service accounts" section in the left-hand side menu.
+* Click "Create Service Account" at the top.
+* Enter a name for the service account and add a description.
+* Click "Create".
+
+1. Grant permissions to the Service Account
+* On the "Service account permissions" page, select the "Role" as 'Project' -> 'Owner'.
+* Click "Continue".
+
+1. Generate a JSON Key for the Service Account
+
+* On the "Grant users access to this service account" page, click on the "Create Key" button.
+* In the dialog box that appears, select "JSON" as the Key type.
+* Click "Create".
+
+6. Download the JSON Key
+* Your browser will automatically download a JSON file containing the credentials for your new service account. Save this file to a secure location. You will use this file to authenticate your application with the Google Vision API.
+
+7. Update your script
+* Replace 'YOUR_SERVICE' in your script with the path to your downloaded JSON file. For example, if your JSON file is called 'linux-00-78670b5fdf42.json' and is in the same directory as your script, you would do the following:
+
+This will set up the environment variable 'GOOGLE_APPLICATION_CREDENTIALS' with the path to your credentials file. This is how the Google Vision API knows how to authenticate your requests.
+
+Remember not to expose your JSON credentials file publicly, as it contains sensitive information that could be used to access and control your Google Cloud resources.
+
+
+## Usage run the script
 ```bash
 python main.py
 ```
 
-You will be prompted to enter a company code (統一編號). The script will automatically fill the form, solve the captcha, and submit the form. If successful, it will print the business information associated with the entered company code.
-系統會提示您輸入公司代碼（統一編號）。該腳本將導航到網站、填寫表格、解決驗證碼並提交表格。如果成功，它將打印與輸入的公司代碼關聯的業務信息。
+After you've finished setting up your environment and installing the necessary dependencies, you can run the script. You'll need to enter the Unified Business Number (UBN) of the company you're interested in when prompted. The script will then try to bypass the captcha and retrieve information about the company.
+完成環境設置並安裝必要的依賴項後，您可以運行腳本。出現提示時，您需要輸入您感興趣的公司的統一業務編號 (UBN)。然後該腳本將嘗試繞過驗證碼並檢索有關公司的信息。
 
-* Entering the company code into the form one character at a time with a random delay between each character
-將公司代碼一次輸入一個字符，每個字符之間有隨機延遲
+The script starts by asking for the UBN:
+```python 
+company_code = input(str("Please enter the Unified Business Number:"))
+```
+It then initializes a web driver and navigates to the desired URL. You'll need the appropriate chromedriver executable for this to work. The script uses the 'eager' page load strategy, meaning it will start interacting with the page as soon as the DOM is interactive.
+然後它會初始化 Web 驅動程序並導航到所需的 URL。您需要適當的 chromedriver 可執行文件才能工作。該腳本使用“eager”頁面加載策略，這意味著它會在 DOM 交互時立即開始與頁面交互。
 
-* Extracting the captcha image and saving it to the local filesystem
-提取驗證碼圖像並將其保存到本地文件系統
+```python 
+service = Service("./chromedriver_mac_arm64/chromedriver.exe")
+chrome_options = Options()
+chrome_options.page_load_strategy = 'eager'
+driver = Chrome(service=service,options = chrome_options)
+```
 
-* Recognizing the captcha text with the Google Cloud Vision API
-使用 Google Cloud Vision API 識別驗證碼文本
+After that, the script enters a loop where it tries to bypass the captcha. It does this by downloading the captcha image, using the Vision API to recognize the text in the image, and then entering that text into the captcha input field. If it fails, it will try again until it reaches the maximum number of attempts.
+腳本進入一個循環，試圖繞過驗證碼。它通過下載驗證碼圖像，使用 Vision API 識別圖像中的文本，然後將該文本輸入驗證碼輸入字段來實現這一點。如果失敗，它將重試，直到達到最大嘗試次數。
 
-* Filling in the captcha text and submitting the form
-填寫驗證碼文本並提交表單
+If the script successfully bypasses the captcha and retrieves the information, it will print out the company data in the terminal:
+如果腳本成功繞過驗證碼並檢索到訊息，它將在終端中打印出公司數據：
 
-* If the captcha is solved successfully, the business information is printed. Otherwise, the process is attempted again for a maximum of five attempts.
-如果驗證成功，則打印業務信息。否則，將再次嘗試該過程，最多嘗試五次
+```python
+data = extract_data(driver)
+print(data)
+```
+
+Finally, the script waits for 30 seconds before closing the web driver. This gives you some time to see the results before the browser window closes:
+最後，腳本在關閉 Web 驅動程序之前等待 30 秒。這使您有時間在瀏覽器窗口關閉之前查看結果：
+
+```python 
+time.sleep(30)
+driver.quit()
+```
